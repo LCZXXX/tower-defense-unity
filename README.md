@@ -1,253 +1,366 @@
 # Unity 2D Tower Defense
 
-一个从零搭建的 **Unity 2D 塔防核心系统 Demo**。  
-该项目用于展示游戏开发中的核心系统设计与代码结构，可作为 **Unity / 游戏开发实习项目作品**。
+一个使用 **Unity 2D** 从零搭建的塔防小游戏项目。  
+项目实现了塔防游戏的核心循环，包括 **路径系统、波次刷怪、自动攻击、防御塔升级、敌人类型系统以及基地生命机制**。
 
-项目实现塔防游戏的基础循环：
-
-Enemy Spawn → Path Movement → Tower Targeting → Shooting → Damage → Economy → UI
-
-通过模块化脚本结构和事件驱动 UI，实现清晰的系统拆分与可扩展架构。
+该项目以模块化结构编写，便于扩展新的塔、防御机制或敌人类型。
 
 ---
 
-# 项目演示
+# 项目特性
 
-当前版本实现了塔防游戏的核心玩法：
+### 路径系统
+敌人按照预设路径移动。
 
-- 敌人沿固定路径移动
-- 波次系统生成敌人
-- 玩家在指定位置建造防御塔
-- 防御塔自动索敌并攻击
-- 子弹命中敌人造成伤害
-- 敌人死亡获得金币奖励
-- 漏怪扣除基地生命
-- UI 实时显示 Gold / Lives / Wave
-- 胜利与失败状态判定
+- 支持多节点路径
+- 使用 `Vector3.MoveTowards()` 实现移动
+- 路径可在 Unity Scene 中直接编辑
 
 ---
 
-# 技术栈
+### 波次刷怪系统
 
-- Unity 2022.3 LTS
-- C#
-- Unity 2D Physics
-- 组件化开发
-- 事件驱动 UI 更新
+`WaveSpawner` 负责控制敌人的生成。
 
-核心 API：
-
-- Physics2D.OverlapCircleAll
-- Vector3.MoveTowards
-- Instantiate
-- Destroy
-
----
-
-# 核心系统
-
-## 敌人路径系统
-
-敌人通过 Waypoint 路径移动。
-
-路径由多个节点组成，敌人按顺序移动到每个节点。
-
-核心逻辑：
-
-Vector3.MoveTowards()
-
-支持：
-
-- 多节点路径
-- 可扩展多条路线
-
----
-
-## 波次刷怪系统
-
-WaveSpawner 控制敌人生成逻辑。
-
-每一波可配置：
+每一波可以配置：
 
 - Enemy Prefab
-- 数量
-- 生成间隔
+- 敌人数量
+- 刷新间隔
 - 速度倍率
+- 敌人类型
 
-系统负责：
+示例：
 
-- 控制敌人生成
-- 波次递增
-- 波次结束奖励
+```
+Wave 1
+Enemy Type : Normal
+Count : 5
+Spawn Interval : 1s
+Speed Multiplier : 1
 
----
-
-## 防御塔攻击系统
-
-防御塔会自动搜索攻击范围内的敌人。
-
-实现流程：
-
-1. 扫描范围内敌人
-2. 选择目标
-3. 发射子弹
-4. 子弹追踪目标
-
-核心逻辑：
-
-Physics2D.OverlapCircleAll()
+Wave 2
+Enemy Type : Fast
+Count : 8
+Spawn Interval : 0.8s
+Speed Multiplier : 1.3
+```
 
 ---
 
-## 子弹伤害系统
+### 防御塔系统
 
-子弹击中敌人后：
+防御塔会自动寻找范围内的敌人并进行攻击。
 
-- 触发伤害
-- 扣除敌人血量
-- 敌人死亡
+核心功能：
 
-核心逻辑：
+- 自动索敌
+- 自动射击
+- 子弹追踪
+- 伤害结算
 
-EnemyHealth.TakeDamage()
+主要参数：
 
-敌人死亡后：
+```
+Attack Range
+Fire Rate
+Damage
+Enemy Layer
+```
 
-- 销毁对象
+---
+
+### 塔升级系统
+
+每个防御塔可以进行多次升级。
+
+升级可以提升：
+
+- 攻击伤害
+- 攻击速度
+- 攻击范围
+
+升级配置示例：
+
+```
+Level 1
+Cost : 80
+Damage +1
+FireRate +0.2
+Range +0.2
+
+Level 2
+Cost : 130
+Damage +2
+FireRate +0.3
+Range +0.3
+```
+
+升级通过点击塔触发。
+
+---
+
+### 敌人类型系统
+
+通过 `EnemyTypePreset` 控制不同敌人的属性。
+
+目前支持类型：
+
+```
+Normal
+Fast
+Tank
+Shielded
+```
+
+不同类型会改变：
+
+- 生命值
+- 移动速度
+- 护盾
+- 护甲
 - 奖励金币
 
 ---
 
-## 经济系统
+### 基地生命系统
 
-游戏包含完整资源循环：
+当敌人到达终点时：
 
-玩家获得金币：
+- 基地生命值减少
+- UI 血条更新
 
-- 击杀敌人
-- 波次奖励
+界面显示：
 
-玩家消耗金币：
+```
+Base HP : 当前生命 / 最大生命
+```
+
+当生命为 0 时游戏结束。
+
+---
+
+### 经济系统
+
+击杀敌人可获得金币：
+
+```
+Enemy Reward Gold
+```
+
+金币用于：
 
 - 建造防御塔
-
-核心逻辑：
-
-Gold -= BuildCost  
-Gold += EnemyReward
+- 升级防御塔
 
 ---
 
-## 基地生命系统
+### UI HUD
 
-当敌人到达终点：
+当前 UI 显示：
 
-Lives -= leakDamage
+```
+Gold
+Base HP
+Wave
+GameOver / Victory
+```
 
-当生命值为 0 时：
-
-Game Over
-
----
-
-## UI 系统
-
-HUD 显示游戏状态：
-
-- Gold
-- Lives
-- Wave
-- GameOver
-- Victory
-
-UI 更新采用 **事件驱动方式**，减少 UI 与游戏逻辑的耦合。
+UI 使用事件驱动方式更新。
 
 ---
 
 # 项目结构
 
+```
 Assets
  ├─ Scripts
  │   ├─ Core
- │   │   └─ GameManager
- │   │
+ │   │   GameManager
+ │   │   Economy
+ │
  │   ├─ Pathing
- │   │   └─ WaypointPath
- │   │
+ │   │   WaypointPath
+ │   │   EnemyMover
+ │
  │   ├─ Enemies
- │   │   ├─ EnemyMover
- │   │   └─ EnemyHealth
- │   │
+ │   │   EnemyHealth
+ │   │   EnemyTypePreset
+ │
  │   ├─ Combat
- │   │   ├─ Tower
- │   │   └─ Bullet
- │   │
+ │   │   Tower
+ │   │   Bullet
+ │
  │   ├─ Spawning
- │   │   └─ WaveSpawner
- │   │
+ │   │   WaveSpawner
+ │
  │   ├─ Building
- │   │   └─ BuildSpot
- │   │
+ │   │   BuildSpot
+ │   │   TowerUpgrade
+ │
  │   └─ UI
- │       └─ HudView
+ │       HUD
+ │       BaseHealthBarView
  │
- ├─ Prefabs
- │
- └─ Scenes
+ └─ Docs
+     UnitySetup.md
+```
 
-Docs
- └─ UnitySetup.md
+---
+
+# Unity 场景配置
+
+## 1 创建路径
+
+在 Scene 中创建：
+
+```
+Path
+ ├─ P0
+ ├─ P1
+ ├─ P2
+ └─ P3
+```
+
+敌人将从 `P0` 移动到 `P3`。
+
+---
+
+## 2 设置刷怪器
+
+在 `WaveSpawner` 中配置：
+
+```
+waves[]
+```
+
+每一波设置：
+
+```
+Enemy Prefab
+Count
+Spawn Interval
+Speed Multiplier
+Enemy Type
+```
+
+---
+
+## 3 设置敌人
+
+Enemy Prefab 需要包含：
+
+```
+EnemyHealth
+EnemyMover
+EnemyTypePreset
+Collider2D
+```
+
+示例：
+
+```
+Max Health : 5
+Shield : 0
+Armor : 0
+Reward Gold : 10
+```
+
+---
+
+## 4 建塔点
+
+创建对象：
+
+```
+BuildSpot
+```
+
+添加：
+
+```
+Collider2D
+BuildSpot Script
+```
+
+点击后生成防御塔。
+
+---
+
+## 5 防御塔配置
+
+Tower Prefab 需要包含：
+
+```
+Tower
+TowerUpgrade
+Collider2D
+```
+
+示例参数：
+
+```
+Attack Range : 2.5
+Fire Rate : 1
+Damage : 3
+```
+
+---
+
+## 6 基地血条 UI
+
+Canvas 中创建：
+
+```
+BaseHealthBar
+ ├─ Fill (Image)
+ └─ ValueText (TextMeshPro)
+```
+
+然后在 `BaseHealthBarView` 中绑定：
+
+```
+Fill Image
+Value Text
+```
 
 ---
 
 # 运行项目
 
-1. 使用 Unity Hub 打开项目
-2. 推荐 Unity 版本：
+1 使用 **Unity Hub** 打开项目  
+2 打开 `MainScene`  
+3 点击 **Play**
 
-Unity 2022.3 LTS
+游戏流程：
 
-3. 打开场景：
-
-MainScene
-
-4. 点击 **Play**
-
-验证游戏循环：
-
-刷怪 → 建塔 → 攻击 → 击杀 → 金币增长 → UI更新
+```
+刷怪 → 建塔 → 攻击 → 击杀 → 获得金币 → 升级塔 → 防守基地
+```
 
 ---
 
-# 项目亮点
+# 可扩展方向
 
-该项目展示了以下游戏开发能力：
+该项目结构支持继续扩展：
 
-- 独立实现塔防核心循环
-- 模块化游戏系统设计
-- 波次刷怪系统
-- 防御塔自动索敌逻辑
-- 事件驱动 UI 更新
-- 清晰的脚本结构划分
-
-适合作为 **Unity / 游戏开发实习项目展示**。
-
----
-
-# 后续优化方向
-
-计划继续扩展以下内容：
-
-- 塔升级系统
-- 多种敌人类型
-- AOE 攻击塔
-- 减速塔
+- 新防御塔类型
+- 技能塔
+- Boss敌人
+- 对象池优化
 - ScriptableObject 配置系统
-- 对象池优化（减少 Instantiate / Destroy）
-- 更完整 UI
-- 音效与简单动画
+- 关卡系统
 
 ---
+
+# 技术栈
+
+```
+Unity 2022.3 LTS
+C#
+Unity 2D Physics
+TextMeshPro
+```
 
 # 作者
 
